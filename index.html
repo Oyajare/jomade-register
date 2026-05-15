@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOMADE HUDIYAH - Enterprise Register</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="ledger-container">
+        <header class="school-header">
+            <img src="logo.png" alt="Logo" class="school-logo">
+            <h1>JOMADE HUDIYAH SCHOOL INTERNATIONAL</h1>
+            
+            <div class="session-controls">
+                <input type="text" id="sessionInput" placeholder="e.g. 2024/2025" onchange="updateSession()">
+                <select id="termSelect">
+                    <option>First Term</option>
+                    <option>Second Term</option>
+                    <option>Third Term</option>
+                </select>
+            </div>
+
+            <div class="lifecycle-btns">
+                <button onclick="startLifecycle('Term')">Start Term</button>
+                <button onclick="startLifecycle('Session')">Start Session</button>
+                <button onclick="endLifecycle('Term')" class="btn-danger">End Term</button>
+                <button onclick="endLifecycle('Session')" class="btn-danger">End Session</button>
+            </div>
+        </header>
+
+        <main id="class-view">
+            <button onclick="showCollation()" class="report-btn" style="width: 90%; margin: 10px auto;padding: 10px; display: block; background-color: yellow;">📊 View Term Report</button>
+            
+            <div class="admin-box">
+                <input type="text" id="newClassName" placeholder="New Class Name (e.g. Primary 1)">
+                <button onclick="addClass()">+ Add Class</button>
+            </div>
+            <div id="vertical-class-list"></div>
+            <button class="history-btn" onclick="showHistory()">📂 Check Last Session History</button>
+        </main>
+
+        <main id="student-view" class="hidden">
+    <button class="back-btn" onclick="showClassView()">← Back to Classes</button>
+    <h2 id="current-class-title"></h2>
+    
+    <div class="admin-box">
+        <input type="text" id="newStudentName" placeholder="Full Name">
+        <button onclick="addStudent()">+ Add Student</button>
+    </div>
+    
+    <div class="bulk-actions">
+        <select id="weekSelect" onchange="renderStudentList()"></select>
+        <select id="daySelect" onchange="renderStudentList()">
+            <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+            <option>Thursday</option><option>Friday</option>
+        </select>
+        <button onclick="markAllPresent()" class="report-btn" style="background: #00b894; margin-top: 10px;">✅ Mark All Present</button>
+    </div>
+
+    <div class="table-header">
+        <span>STUDENT NAME</span>
+        <span>STATUS</span>
+        <span>ACTION</span>
+    </div>
+    <div id="student-list-vertical"></div>
+</main>
+<div id="report-view" class="hidden">
+    <div class="report-card">
+        <h3 id="report-title">Term Report</h3>
+        
+        <div class="admin-box" style="background: rgba(255,255,255,0.2); margin-bottom: 15px;">
+            <label for="reportClassSelect" style="font-weight: bold;">Select Class to View:</label>
+            <select id="reportClassSelect" onchange="generateSpecificReport()">
+                <option value="">-- Choose Class --</option>
+            </select>
+        </div>
+
+        <div id="report-results">
+            <p style="text-align: center; font-style: italic;">Please select a class above to view records.</p>
+        </div>
+        
+        <button onclick="closeReport()" class="back-btn">Close</button>
+    </div>
+</div>
+        
+        </div>
+    <script src="app.js"></script>
+</body>
+</html>
