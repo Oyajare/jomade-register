@@ -1,16 +1,33 @@
 // 1. PASTE YOUR GOOGLE URL HERE
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGaxFBRhD3s7nnPg_5vfJaFWBu0l6vekliNWQGZnqoRpWDkSo2OyoEGJRd_YefwpbD/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpR8NFwezzay15IMQj5_7FuekSCoZp1hXgAcZ5O9QQzFtWL0ss1J62G5u1t8160zFL/exec";
 let schoolData = JSON.parse(localStorage.getItem('jomade_schoolData')) || {};
 let records = JSON.parse(localStorage.getItem('jomade_records')) || [];
 let history = JSON.parse(localStorage.getItem('jomade_history')) || [];
 let activeClass = "";
 
-// --- 1. AUTO-SYNC LOGIC ---
+// --- NEW: FETCH DATA FROM CLOUD ON LOAD ---
+async function loadDataFromCloud() {
+    if (!navigator.onLine) return;
+    try {
+        const response = await fetch(SCRIPT_URL);
+        const cloudData = await response.json();
+        
+        if (cloudData && !cloudData.error && Object.keys(cloudData).length > 0) {
+            schoolData = cloudData;
+            localStorage.setItem('jomade_schoolData', JSON.stringify(schoolData));
+            renderClassView();
+            console.log("Cloud data successfully synced to this device.");
+        }
+    } catch (e) {
+        console.error("Could not load database from cloud:", e);
+    }
+}
+
+// --- AUTO-SYNC LOGIC ---
 async function autoSync() {
     if (!navigator.onLine || records.length === 0) return;
     
     try {
-        // Send data to Google Sheets
         await fetch(SCRIPT_URL, { 
             method: "POST", 
             mode: "no-cors", 
@@ -23,18 +40,15 @@ async function autoSync() {
     }
 }
 
-// Sync automatically when internet returns
 window.addEventListener('online', autoSync);
 
-// --- 2. ATTENDANCE LOGIC ---
-
+// --- ATTENDANCE LOGIC ---
 function mark(name, status, silent = false) {
     const term = document.getElementById('termSelect').value;
     const week = document.getElementById('weekSelect').value;
     const day = document.getElementById('daySelect').value;
     const session = document.getElementById('sessionInput').value || "2024/2025";
 
-    // Remove old mark for this day/student to avoid duplicates
     records = records.filter(r => !(r.name === name && r.day === day && r.week === week && r.class === activeClass));
 
     records.push({ 
@@ -52,11 +66,10 @@ function mark(name, status, silent = false) {
 
 function markAllPresent() {
     if (!activeClass || schoolData[activeClass].length === 0) return;
-    
     const day = document.getElementById('daySelect').value;
     if (confirm(`Mark everyone in ${activeClass} as Present for ${day}?`)) {
         schoolData[activeClass].forEach(name => {
-            mark(name, 'P', true); // 'true' keeps it silent to avoid refreshing 50 times
+            mark(name, 'P', true);
         });
         renderStudentList();
         autoSync();
@@ -75,8 +88,7 @@ function deleteAttendance(name) {
     }
 }
 
-// --- 3. CLASS & STUDENT MANAGEMENT ---
-
+// --- CLASS & STUDENT MANAGEMENT ---
 function addClass() {
     const name = document.getElementById('newClassName').value.trim().toUpperCase();
     if (name && !schoolData[name]) {
@@ -97,6 +109,7 @@ function deleteClass(cls) {
 
 function renderClassView() {
     const list = document.getElementById('vertical-class-list');
+    if (!list) return;
     list.innerHTML = "";
     Object.keys(schoolData).sort().forEach(cls => {
         list.innerHTML += `
@@ -138,6 +151,7 @@ function renderStudentList() {
     const day = document.getElementById('daySelect').value;
     const week = document.getElementById('weekSelect').value;
     
+    if (!list) return;
     list.innerHTML = "";
     if (schoolData[activeClass]) {
         schoolData[activeClass].forEach((name, index) => {
@@ -161,8 +175,7 @@ function renderStudentList() {
     }
 }
 
-// --- 4. REPORTS & SESSION ---
-
+// --- REPORTS & SESSION ---
 function showCollation() {
     document.getElementById('report-view').classList.remove('hidden');
     const reportSelect = document.getElementById('reportClassSelect');
@@ -187,34 +200,12 @@ function generateSpecificReport() {
     resultsDiv.innerHTML = html + `</table>`;
 }
 
+// Helpers
 function closeReport() { document.getElementById('report-view').classList.add('hidden'); }
-
-function endLifecycle(type) {
-    if (type === 'Session') {
-        if (confirm("End Session? Promote students and clear logs?")) {
-            let newData = {};
-            let classes = Object.keys(schoolData).sort();
-            for (let i = classes.length - 1; i >= 0; i--) {
-                let currentCls = classes[i];
-                let nextCls = classes[i+1];
-                if (nextCls) newData[nextCls] = schoolData[currentCls];
-            }
-            newData[classes[0]] = []; 
-            history.push({ session: document.getElementById('sessionInput').value, records: [...records] });
-            schoolData = newData;
-            records = [];
-            save();
-            localStorage.setItem('jomade_history', JSON.stringify(history));
-            location.reload();
-        }
-    }
-}
-
 function save() {
     localStorage.setItem('jomade_schoolData', JSON.stringify(schoolData));
     localStorage.setItem('jomade_records', JSON.stringify(records));
 }
-
 function showClassView() { 
     document.getElementById('student-view').classList.add('hidden'); 
     document.getElementById('class-view').classList.remove('hidden'); 
@@ -222,6 +213,9 @@ function showClassView() {
 
 // --- INIT ---
 const ws = document.getElementById('weekSelect');
-for(let i=1; i<=12; i++) ws.innerHTML += `<option>Week ${i}</option>`;
+if (ws) {
+    for(let i=1; i<=12; i++) ws.innerHTML += `<option>Week ${i}</option>`;
+}
 renderClassView();
+loadDataFromCloud(); // Handles pulling list onto new devices automatically
 autoSync();
