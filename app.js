@@ -1,22 +1,32 @@
 // 1. PASTE YOUR GOOGLE URL HERE
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpR8NFwezzay15IMQj5_7FuekSCoZp1hXgAcZ5O9QQzFtWL0ss1J62G5u1t8160zFL/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzL3H4e5Un6ktLZXTTO4ydn3Q6cjL-tDh4_mYb_3U6Czsl2iu6dhp4y5UO41vC865aB/exec";
 let schoolData = JSON.parse(localStorage.getItem('jomade_schoolData')) || {};
 let records = JSON.parse(localStorage.getItem('jomade_records')) || [];
 let history = JSON.parse(localStorage.getItem('jomade_history')) || [];
 let activeClass = "";
 
 // --- NEW: FETCH DATA FROM CLOUD ON LOAD ---
+// --- UPDATED: FETCH NAMES AND ATTENDANCE HISTORY FROM CLOUD ---
 async function loadDataFromCloud() {
     if (!navigator.onLine) return;
     try {
         const response = await fetch(SCRIPT_URL);
         const cloudData = await response.json();
         
-        if (cloudData && !cloudData.error && Object.keys(cloudData).length > 0) {
-            schoolData = cloudData;
-            localStorage.setItem('jomade_schoolData', JSON.stringify(schoolData));
+        if (cloudData && !cloudData.error) {
+            // Load master student list
+            if (cloudData.schoolData && Object.keys(cloudData.schoolData).length > 0) {
+                schoolData = cloudData.schoolData;
+                localStorage.setItem('jomade_schoolData', JSON.stringify(schoolData));
+            }
+            // Load master attendance records (This fixes the across-devices issue!)
+            if (cloudData.records && cloudData.records.length > 0) {
+                records = cloudData.records;
+                localStorage.setItem('jomade_records', JSON.stringify(records));
+            }
+            
             renderClassView();
-            console.log("Cloud data successfully synced to this device.");
+            console.log("Everything synced from cloud successfully.");
         }
     } catch (e) {
         console.error("Could not load database from cloud:", e);
